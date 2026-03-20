@@ -1,6 +1,6 @@
 """
-本体生成服务
-接口1：分析文本内容，生成适合社会模拟的实体和关系类型定义
+Ontology generation service
+Interface 1: Analyze text content, generate entity and relation type definitions suitable for social simulation
 """
 
 import json
@@ -8,112 +8,112 @@ from typing import Dict, Any, List, Optional
 from ..utils.llm_client import LLMClient
 
 
-# 本体生成的系统提示词
-ONTOLOGY_SYSTEM_PROMPT = """你是一个专业的知识图谱本体设计专家。你的任务是分析给定的文本内容和模拟需求，设计适合**社交媒体舆论模拟**的实体类型和关系类型。
+# Ontology generation system prompt
+ONTOLOGY_SYSTEM_PROMPT = """You are a professional knowledge graph ontology design expert. Your task is to analyze given text content and simulation requirements, design suitable**social media opinion simulation**entity types and relation types.
 
-**重要：你必须输出有效的JSON格式数据，不要输出任何其他内容。**
+**Important: You must output valid JSON format data, do not output any other content.**
 
-## 核心任务背景
+## Core Task Background
 
-我们正在构建一个**社交媒体舆论模拟系统**。在这个系统中：
-- 每个实体都是一个可以在社交媒体上发声、互动、传播信息的"账号"或"主体"
-- 实体之间会相互影响、转发、评论、回应
-- 我们需要模拟舆论事件中各方的反应和信息传播路径
+We are building a **social media opinion simulation system**. In this system:
+- Each entity is an "account" or "subject" that can speak, interact, and spread information on social media
+- Entities influence, repost, comment, and respond to each other
+- We need to simulate reactions and information spread paths of all parties in opinion events
 
-因此，**实体必须是现实中真实存在的、可以在社媒上发声和互动的主体**：
+Therefore, **entities must be real subjects that actually exist in reality and can speak and interact on social media**：
 
-**可以是**：
-- 具体的个人（公众人物、当事人、意见领袖、专家学者、普通人）
-- 公司、企业（包括其官方账号）
-- 组织机构（大学、协会、NGO、工会等）
-- 政府部门、监管机构
-- 媒体机构（报纸、电视台、自媒体、网站）
-- 社交媒体平台本身
-- 特定群体代表（如校友会、粉丝团、维权群体等）
+**Can be**：
+- Specific individuals (public figures, parties involved, opinion leaders, experts, ordinary people)
+- Companies, enterprises (including official accounts)
+- Organizations (universities, associations, NGOs, unions, etc.)
+- Government departments, regulatory agencies
+- Media organizations (newspapers, TV stations, self-media, websites)
+- Social media platforms themselves
+- Representatives of specific groups (such as alumni associations, fan groups, rights protection groups, etc.)
 
-**不可以是**：
-- 抽象概念（如"舆论"、"情绪"、"趋势"）
-- 主题/话题（如"学术诚信"、"教育改革"）
-- 观点/态度（如"支持方"、"反对方"）
+**Cannot be**：
+- Abstract concepts (such as "opinion", "emotion", "trend")
+- Themes/topics (such as "academic integrity", "education reform")
+- Opinions/attitudes (such as "supporters", "opponents")
 
-## 输出格式
+## Output Format
 
-请输出JSON格式，包含以下结构：
+Please output JSON format, containing the following structure:
 
 ```json
 {
     "entity_types": [
         {
-            "name": "实体类型名称（英文，PascalCase）",
-            "description": "简短描述（英文，不超过100字符）",
+            "name": "Entity type name (English, PascalCase)",
+            "description": "Short description (English, max 100 characters)",
             "attributes": [
                 {
-                    "name": "属性名（英文，snake_case）",
+                    "name": "Attribute name (English, snake_case)",
                     "type": "text",
-                    "description": "属性描述"
+                    "description": "Attribute description"
                 }
             ],
-            "examples": ["示例实体1", "示例实体2"]
+            "examples": ["Example entity 1", "Example entity 2"]
         }
     ],
     "edge_types": [
         {
-            "name": "关系类型名称（英文，UPPER_SNAKE_CASE）",
-            "description": "简短描述（英文，不超过100字符）",
+            "name": "Relation type name (English, UPPER_SNAKE_CASE)",
+            "description": "Short description (English, max 100 characters)",
             "source_targets": [
-                {"source": "源实体类型", "target": "目标实体类型"}
+                {"source": "Source entity type", "target": "Target entity type"}
             ],
             "attributes": []
         }
     ],
-    "analysis_summary": "对文本内容的简要分析说明（中文）"
+    "analysis_summary": "Brief analysis of text content (English)"
 }
 ```
 
-## 设计指南（极其重要！）
+## Design Guidelines (Extremely Important!)
 
-### 1. 实体类型设计 - 必须严格遵守
+### 1. Entity Type Design - Must strictly follow
 
-**数量要求：必须正好10个实体类型**
+**Quantity requirement: exactly 10 entity types**
 
-**层次结构要求（必须同时包含具体类型和兜底类型）**：
+**Hierarchy requirement (must include both specific and catch-all types)**：
 
-你的10个实体类型必须包含以下层次：
+Your 10 entity types must include the following hierarchy:
 
-A. **兜底类型（必须包含，放在列表最后2个）**：
-   - `Person`: 任何自然人个体的兜底类型。当一个人不属于其他更具体的人物类型时，归入此类。
-   - `Organization`: 任何组织机构的兜底类型。当一个组织不属于其他更具体的组织类型时，归入此类。
+A. **Catch-all types (must include, place last 2 in list)**：
+   - `Person`: Catch-all type for any natural person. When a person does not belong to other more specific types, classify here.
+   - `Organization`: Catch-all type for any organization. When an organization does not belong to other more specific types, classify here.
 
-B. **具体类型（8个，根据文本内容设计）**：
-   - 针对文本中出现的主要角色，设计更具体的类型
-   - 例如：如果文本涉及学术事件，可以有 `Student`, `Professor`, `University`
-   - 例如：如果文本涉及商业事件，可以有 `Company`, `CEO`, `Employee`
+B. **Specific types (8, designed based on text content)**：
+   - Design more specific types for main characters appearing in text
+   - For example: if text involves academic events, can have `Student`, `Professor`, `University`
+   - For example: if text involves business events, can have `Company`, `CEO`, `Employee`
 
-**为什么需要兜底类型**：
-- 文本中会出现各种人物，如"中小学教师"、"路人甲"、"某位网友"
-- 如果没有专门的类型匹配，他们应该被归入 `Person`
-- 同理，小型组织、临时团体等应该归入 `Organization`
+**Why need catch-all types**：
+- Various characters may appear in text, such as"中小学教师"、"路人甲"、"某位网友"
+- If no specific type matches, they should be classified into `Person`
+- Similarly, small organizations, temporary groups, etc. should be classified into `Organization`
 
-**具体类型的设计原则**：
-- 从文本中识别出高频出现或关键的角色类型
-- 每个具体类型应该有明确的边界，避免重叠
-- description 必须清晰说明这个类型和兜底类型的区别
+**Specific type design principles**：
+- Identify frequently occurring or key character types from text
+- Each specific type should have clear boundaries to avoid overlap
+- description must clearly explain the difference between this type and catch-all types
 
-### 2. 关系类型设计
+### 2. Relation type design
 
-- 数量：6-10个
-- 关系应该反映社媒互动中的真实联系
-- 确保关系的 source_targets 涵盖你定义的实体类型
+- Quantity: 6-10
+- Relations should reflect real connections in social media interactions
+- Ensure relation source_targets cover your defined entity types
 
-### 3. 属性设计
+### 3. Attribute design
 
-- 每个实体类型1-3个关键属性
-- **注意**：属性名不能使用 `name`、`uuid`、`group_id`、`created_at`、`summary`（这些是系统保留字）
-- 推荐使用：`full_name`, `title`, `role`, `position`, `location`, `description` 等
+- 1-3 key attributes per entity type
+- **Note**：Attribute names cannot use `name`、`uuid`、`group_id`、`created_at`、`summary`（these are system reserved words）
+- Recommended：`full_name`, `title`, `role`, `position`, `location`, `description` etc.
 
-## 实体类型参考
+## Entity type reference
 
-**个人类（具体）**：
+**Individual (specific)**：
 - Student: 学生
 - Professor: 教授/学者
 - Journalist: 记者
@@ -179,7 +179,7 @@ class OntologyGenerator:
             additional_context: 额外上下文
             
         Returns:
-            本体定义（entity_types, edge_types等）
+            本体定义（entity_types, edge_typesetc.）
         """
         # 构建用户消息
         user_message = self._build_user_message(
@@ -242,14 +242,14 @@ class OntologyGenerator:
 """
         
         message += """
-请根据以上内容，设计适合社会舆论模拟的实体类型和关系类型。
+请根据以上内容，设计适合社会舆论模拟entity types and relation types.
 
 **必须遵守的规则**：
 1. 必须正好输出10个实体类型
 2. 最后2个必须是兜底类型：Person（个人兜底）和 Organization（组织兜底）
 3. 前8个是根据文本内容设计的具体类型
 4. 所有实体类型必须是现实中可以发声的主体，不能是抽象概念
-5. 属性名不能使用 name、uuid、group_id 等保留字，用 full_name、org_name 等替代
+5. Attribute names cannot use name、uuid、group_id etc.保留字，用 full_name、org_name 等替代
 """
         
         return message

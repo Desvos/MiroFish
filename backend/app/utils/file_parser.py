@@ -26,13 +26,13 @@ def _read_text_with_fallback(file_path: str) -> str:
     """
     data = Path(file_path).read_bytes()
     
-    # 首先尝试 UTF-8
+    # First try UTF-8
     try:
         return data.decode('utf-8')
     except UnicodeDecodeError:
         pass
-    
-    # 尝试使用 charset_normalizer 检测编码
+
+    # Try using charset_normalizer to detect encoding
     encoding = None
     try:
         from charset_normalizer import from_bytes
@@ -41,8 +41,8 @@ def _read_text_with_fallback(file_path: str) -> str:
             encoding = best.encoding
     except Exception:
         pass
-    
-    # 回退到 chardet
+
+    # Fallback to chardet
     if not encoding:
         try:
             import chardet
@@ -50,8 +50,8 @@ def _read_text_with_fallback(file_path: str) -> str:
             encoding = result.get('encoding') if result else None
         except Exception:
             pass
-    
-    # 最终兜底：使用 UTF-8 + replace
+
+    # Final fallback: use UTF-8 with replace
     if not encoding:
         encoding = 'utf-8'
     
@@ -77,7 +77,7 @@ class FileParser:
         path = Path(file_path)
         
         if not path.exists():
-            raise FileNotFoundError(f"文件不存在: {file_path}")
+            raise FileNotFoundError(f"File does not exist: {file_path}")
         
         suffix = path.suffix.lower()
         
@@ -91,7 +91,7 @@ class FileParser:
         elif suffix == '.txt':
             return cls._extract_from_txt(file_path)
         
-        raise ValueError(f"无法处理的文件格式: {suffix}")
+        raise ValueError(f"Cannot process file format: {suffix}")
     
     @staticmethod
     def _extract_from_pdf(file_path: str) -> str:
@@ -137,7 +137,7 @@ class FileParser:
             try:
                 text = cls.extract_text(file_path)
                 filename = Path(file_path).name
-                all_texts.append(f"=== 文档 {i}: {filename} ===\n{text}")
+                all_texts.append(f"=== Document {i}: {filename} ===\n{text}")
             except Exception as e:
                 all_texts.append(f"=== Document {i}: {file_path} (extraction failed: {str(e)}) ===")
         
@@ -182,7 +182,7 @@ def split_text_into_chunks(
         if chunk:
             chunks.append(chunk)
         
-        # 下一个块从重叠位置开始
+        # Next chunk starts from overlap position
         start = end - overlap if end < len(text) else len(text)
     
     return chunks

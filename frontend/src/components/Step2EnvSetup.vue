@@ -674,16 +674,16 @@ const customMaxRounds = ref(40)   // Default recommended 40 rounds
 
 // Watch stage to update phase
 watch(currentStage, (newStage) => {
-  if (newStage === '生成Agent人设' || newStage === 'generating_profiles') {
+  if (newStage === 'Generating Agent Profiles' || newStage === 'generating_profiles') {
     phase.value = 1
-  } else if (newStage === '生成模拟配置' || newStage === 'generating_config') {
+  } else if (newStage === 'Generating Simulation Config' || newStage === 'generating_config') {
     phase.value = 2
     // Enter config generation phase, start polling for config
     if (!configTimer) {
       addLog('Starting dual-platform simulation config generation...')
       startConfigPolling()
     }
-  } else if (newStage === '准备模拟脚本' || newStage === 'copying_scripts') {
+  } else if (newStage === 'Preparing Simulation Scripts' || newStage === 'copying_scripts') {
     phase.value = 2 // Still in config phase
   }
 })
@@ -1902,7 +1902,7 @@ onUnmounted(() => {
   flex: 1;
 }
 
-/* 基本信息网格 */
+/* Basic info grid */
 .modal-info-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -1938,7 +1938,7 @@ onUnmounted(() => {
   color: #FF5722;
 }
 
-/* 模块区域 */
+/* Module area */
 .modal-section {
   margin-bottom: 28px;
 }
@@ -1964,7 +1964,7 @@ onUnmounted(() => {
   border-left: 3px solid #E0E0E0;
 }
 
-/* 话题标签 */
+/* Topic tags */
 .topics-grid {
   display: flex;
   flex-wrap: wrap;
@@ -1986,7 +1986,7 @@ onUnmounted(() => {
   color: #0D47A1;
 }
 
-/* 详细人设 */
+/* Detailed profile */
 .persona-dimensions {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -2272,7 +2272,7 @@ onUnmounted(() => {
   margin: 0;
 }
 
-/* 模拟轮数配置样式 */
+/* Simulation rounds config styles */
 .rounds-config-section {
   margin: 24px 0;
   padding-top: 24px;

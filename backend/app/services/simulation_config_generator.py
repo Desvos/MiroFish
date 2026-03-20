@@ -1,13 +1,13 @@
 """
-模拟配置智能生成器
-使用LLM根据模拟需求、文档内容、图谱信息自动生成细致的模拟参数
-实现全程自动化，无需人工设置参数
+Simulation config intelligent generator
+Use LLM to automatically generate detailed simulation parameters based on simulation requirements, document content, and graph info
+Achieve full automation without manual parameter setting
 
-采用分步生成策略，避免一次性生成过长内容导致失败：
-1. 生成时间配置
-2. 生成事件配置
-3. 分批生成Agent配置
-4. 生成平台配置
+Use step-by-step generation strategy to avoid failures from generating too long content at once:
+1. Generate time config
+2. Generate event config
+3. Generate Agent configs in batches
+4. Generate platform config
 """
 
 import json
@@ -24,23 +24,23 @@ from .zep_entity_reader import EntityNode, ZepEntityReader
 
 logger = get_logger('mirofish.simulation_config')
 
-# 中国作息时间配置（北京时间）
+# China daily schedule config (Beijing time)
 CHINA_TIMEZONE_CONFIG = {
-    # 深夜时段（几乎无人活动）
+    # Late night (almost no activity)
     "dead_hours": [0, 1, 2, 3, 4, 5],
-    # 早间时段（逐渐醒来）
+    # Morning (gradually waking up)
     "morning_hours": [6, 7, 8],
-    # 工作时段
+    # Work hours
     "work_hours": [9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
-    # 晚间高峰（最活跃）
+    # Evening peak (most active)
     "peak_hours": [19, 20, 21, 22],
-    # 夜间时段（活跃度下降）
+    # Night time (activity decreasing)
     "night_hours": [23],
     # 活跃度系数
     "activity_multipliers": {
         "dead": 0.05,      # 凌晨几乎无人
         "morning": 0.4,    # 早间逐渐活跃
-        "work": 0.7,       # 工作时段中等
+        "work": 0.7,       # Work hours中等
         "peak": 1.5,       # 晚间高峰
         "night": 0.5       # 深夜下降
     }
@@ -104,7 +104,7 @@ class TimeSimulationConfig:
     morning_hours: List[int] = field(default_factory=lambda: [6, 7, 8])
     morning_activity_multiplier: float = 0.4
     
-    # 工作时段
+    # Work hours
     work_hours: List[int] = field(default_factory=lambda: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18])
     work_activity_multiplier: float = 0.7
 
@@ -198,13 +198,13 @@ class SimulationParameters:
 
 class SimulationConfigGenerator:
     """
-    模拟配置智能生成器
+    Simulation config intelligent generator
     
     使用LLM分析模拟需求、文档内容、图谱实体信息，
     自动生成最佳的模拟参数配置
     
     采用分步生成策略：
-    1. 生成时间配置和事件配置（轻量级）
+    1. Generate time config和事件配置（轻量级）
     2. 分批生成Agent配置（每批10-20个）
     3. 生成平台配置
     """
@@ -291,14 +291,14 @@ class SimulationConfigGenerator:
         
         reasoning_parts = []
         
-        # ========== 步骤1: 生成时间配置 ==========
+        # ========== 步骤1. Generate time config ==========
         report_progress(1, "生成时间配置...")
         num_entities = len(entities)
         time_config_result = self._generate_time_config(context, num_entities)
         time_config = self._parse_time_config(time_config_result, num_entities)
         reasoning_parts.append(f"时间配置: {time_config_result.get('reasoning', '成功')}")
         
-        # ========== 步骤2: 生成事件配置 ==========
+        # ========== 步骤2. Generate event config ==========
         report_progress(2, "生成事件配置和热点话题...")
         event_config_result = self._generate_event_config(context, simulation_requirement, entities)
         event_config = self._parse_event_config(event_config_result)

@@ -16,14 +16,14 @@ def _ensure_utf8_stdout():
     Resolves Chinese character encoding issues in Windows console
     """
     if sys.platform == 'win32':
-        # Windows 下重新配置标准输出为 UTF-8
+        # Reconfigure stdout/stderr to UTF-8 on Windows
         if hasattr(sys.stdout, 'reconfigure'):
             sys.stdout.reconfigure(encoding='utf-8', errors='replace')
         if hasattr(sys.stderr, 'reconfigure'):
             sys.stderr.reconfigure(encoding='utf-8', errors='replace')
 
 
-# 日志目录
+# Log directory
 LOG_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'logs')
 
 
@@ -38,10 +38,10 @@ def setup_logger(name: str = 'mirofish', level: int = logging.DEBUG) -> logging.
     Returns:
         Configured logger
     """
-    # 确保日志目录存在
+    # Ensure log directory exists
     os.makedirs(LOG_DIR, exist_ok=True)
-    
-    # 创建日志器
+
+    # Create logger
     logger = logging.getLogger(name)
     logger.setLevel(level)
     
@@ -52,7 +52,7 @@ def setup_logger(name: str = 'mirofish', level: int = logging.DEBUG) -> logging.
     if logger.handlers:
         return logger
     
-    # 日志格式
+    # Log format
     detailed_formatter = logging.Formatter(
         '[%(asctime)s] %(levelname)s [%(name)s.%(funcName)s:%(lineno)d] %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
@@ -75,13 +75,13 @@ def setup_logger(name: str = 'mirofish', level: int = logging.DEBUG) -> logging.
     file_handler.setFormatter(detailed_formatter)
 
     # 2. Console handler - simple logs (INFO and above)
-    # Ensure UTF-8 encoding on Windows to avoid Chinese character encoding issues
+    # Ensure UTF-8 encoding on Windows to avoid character encoding issues
     _ensure_utf8_stdout()
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(logging.INFO)
     console_handler.setFormatter(simple_formatter)
     
-    # 添加处理器
+    # Add handlers
     logger.addHandler(file_handler)
     logger.addHandler(console_handler)
     
@@ -104,11 +104,11 @@ def get_logger(name: str = 'mirofish') -> logging.Logger:
     return logger
 
 
-# 创建默认日志器
+# Create default logger
 logger = setup_logger()
 
 
-# 便捷方法
+# Convenience methods
 def debug(msg, *args, **kwargs):
     logger.debug(msg, *args, **kwargs)
 

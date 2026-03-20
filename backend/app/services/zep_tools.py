@@ -1,11 +1,11 @@
 """
-Zep检索工具服务
-封装图谱搜索、节点读取、边查询等工具，供Report Agent使用
+Zep retrieval tool service
+Encapsulate graph search, node reading, edge query tools for Report Agent
 
-核心检索工具（优化后）：
-1. InsightForge（深度洞察检索）- 最强大的混合检索，自动生成子问题并多维度检索
-2. PanoramaSearch（广度搜索）- 获取全貌，包括过期内容
-3. QuickSearch（简单搜索）- 快速检索
+Core retrieval tools (optimized):
+1. InsightForge (deep insight retrieval) - most powerful hybrid retrieval, auto-generates sub-questions and multi-dimensional retrieval
+2. PanoramaSearch (broad search) - get full picture, including expired content
+3. QuickSearch (simple search) - quick retrieval
 """
 
 import time
@@ -25,7 +25,7 @@ logger = get_logger('mirofish.zep_tools')
 
 @dataclass
 class SearchResult:
-    """搜索结果"""
+    """Search result"""
     facts: List[str]
     edges: List[Dict[str, Any]]
     nodes: List[Dict[str, Any]]
@@ -42,11 +42,11 @@ class SearchResult:
         }
     
     def to_text(self) -> str:
-        """转换为文本格式，供LLM理解"""
+        """Convert to text format for LLM understanding"""
         text_parts = [f"搜索查询: {self.query}", f"找到 {self.total_count} 条相关信息"]
         
         if self.facts:
-            text_parts.append("\n### 相关事实:")
+            text_parts.append("\n### Related facts:")
             for i, fact in enumerate(self.facts, 1):
                 text_parts.append(f"{i}. {fact}")
         
@@ -55,7 +55,7 @@ class SearchResult:
 
 @dataclass
 class NodeInfo:
-    """节点信息"""
+    """Node info"""
     uuid: str
     name: str
     labels: List[str]
@@ -72,9 +72,9 @@ class NodeInfo:
         }
     
     def to_text(self) -> str:
-        """转换为文本格式"""
+        """Convert to text format"""
         entity_type = next((l for l in self.labels if l not in ["Entity", "Node"]), "未知类型")
-        return f"实体: {self.name} (类型: {entity_type})\n摘要: {self.summary}"
+        return f"Entity: {self.name} (Type: {entity_type})\nSummary: {self.summary}"
 
 
 @dataclass
@@ -109,7 +109,7 @@ class EdgeInfo:
         }
     
     def to_text(self, include_temporal: bool = False) -> str:
-        """转换为文本格式"""
+        """Convert to text format"""
         source = self.source_node_name or self.source_node_uuid[:8]
         target = self.target_node_name or self.target_node_uuid[:8]
         base_text = f"关系: {source} --[{self.name}]--> {target}\n事实: {self.fact}"
@@ -399,7 +399,7 @@ class InterviewResult:
 
 class ZepToolsService:
     """
-    Zep检索工具服务
+    Zep retrieval tool service
     
     【核心检索工具 - 优化后】
     1. insight_forge - 深度洞察检索（最强大，自动生成子问题，多维度检索）

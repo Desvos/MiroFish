@@ -304,7 +304,7 @@ def build_graph():
                 "error": "Please provide project_id"
             }), 400
         
-        # 获取项目
+        # Get project
         project = ProjectManager.get_project(project_id)
         if not project:
             return jsonify({

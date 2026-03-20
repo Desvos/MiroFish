@@ -73,7 +73,7 @@ class GraphBuilderService:
         Returns:
             Task ID
         """
-        # 创建任务
+        # Create task
         task_id = self.task_manager.create_task(
             task_type="graph_build",
             metadata={
@@ -112,7 +112,7 @@ class GraphBuilderService:
                 message="Starting graph build..."
             )
             
-            # 1. 创建图谱
+            # 1. Create graph
             graph_id = self.create_graph(graph_name)
             self.task_manager.update_task(
                 task_id,
@@ -120,7 +120,7 @@ class GraphBuilderService:
                 message=f"Graph created: {graph_id}"
             )
             
-            # 2. 设置本体
+            # 2. Set ontology
             self.set_ontology(graph_id, ontology)
             self.task_manager.update_task(
                 task_id,
@@ -128,7 +128,7 @@ class GraphBuilderService:
                 message="Ontology set"
             )
             
-            # 3. 文本分块
+            # 3. Text chunking
             chunks = TextProcessor.split_text(text, chunk_size, chunk_overlap)
             total_chunks = len(chunks)
             self.task_manager.update_task(
@@ -137,7 +137,7 @@ class GraphBuilderService:
                 message=f"Text split into {total_chunks} chunks"
             )
             
-            # 4. 分批发送数据
+            # 4. Send data in batches
             episode_uuids = self.add_text_batches(
                 graph_id, chunks, batch_size,
                 lambda msg, prog: self.task_manager.update_task(
@@ -147,7 +147,7 @@ class GraphBuilderService:
                 )
             )
             
-            # 5. 等待Zep处理完成
+            # 5. Wait for Zep processing to complete
             self.task_manager.update_task(
                 task_id,
                 progress=60,
@@ -163,7 +163,7 @@ class GraphBuilderService:
                 )
             )
             
-            # 6. 获取图谱信息
+            # 6. Get graph info
             self.task_manager.update_task(
                 task_id,
                 progress=90,
@@ -172,7 +172,7 @@ class GraphBuilderService:
             
             graph_info = self._get_graph_info(graph_id)
             
-            # 完成
+            # Complete
             self.task_manager.complete_task(task_id, {
                 "graph_id": graph_id,
                 "graph_info": graph_info.to_dict(),
@@ -203,8 +203,8 @@ class GraphBuilderService:
         from pydantic import Field
         from zep_cloud.external_clients.ontology import EntityModel, EntityText, EdgeModel
         
-        # 抑制 Pydantic v2 关于 Field(default=None) 的警告
-        # 这是 Zep SDK 要求的用法，警告来自动态类创建，可以安全忽略
+        # Suppress Pydantic v2 warnings about Field(default=None)
+        # This is required by Zep SDK, warnings come from dynamic class creation, can be safely ignored
         warnings.filterwarnings('ignore', category=UserWarning, module='pydantic')
         
         # Zep reserved names, cannot be used as attribute names
@@ -216,55 +216,55 @@ class GraphBuilderService:
                 return f"entity_{attr_name}"
             return attr_name
         
-        # 动态创建实体类型
+        # Dynamically create entity types
         entity_types = {}
         for entity_def in ontology.get("entity_types", []):
             name = entity_def["name"]
             description = entity_def.get("description", f"A {name} entity.")
             
-            # 创建属性字典和类型注解（Pydantic v2 需要）
+            # Create attribute dict and type annotations (required by Pydantic v2)
             attrs = {"__doc__": description}
             annotations = {}
             
             for attr_def in entity_def.get("attributes", []):
-                attr_name = safe_attr_name(attr_def["name"])  # 使用安全名称
+                attr_name = safe_attr_name(attr_def["name"])  # Use safe name
                 attr_desc = attr_def.get("description", attr_name)
-                # Zep API 需要 Field 的 description，这是必需的
+                # Zep API requires Field description, this is mandatory
                 attrs[attr_name] = Field(description=attr_desc, default=None)
-                annotations[attr_name] = Optional[EntityText]  # 类型注解
+                annotations[attr_name] = Optional[EntityText]  # Type annotations
             
             attrs["__annotations__"] = annotations
             
-            # 动态创建类
+            # Dynamically create class
             entity_class = type(name, (EntityModel,), attrs)
             entity_class.__doc__ = description
             entity_types[name] = entity_class
         
-        # 动态创建边类型
+        # Dynamically create edge types
         edge_definitions = {}
         for edge_def in ontology.get("edge_types", []):
             name = edge_def["name"]
             description = edge_def.get("description", f"A {name} relationship.")
             
-            # 创建属性字典和类型注解
+            # Create attribute dict and type annotations
             attrs = {"__doc__": description}
             annotations = {}
             
             for attr_def in edge_def.get("attributes", []):
-                attr_name = safe_attr_name(attr_def["name"])  # 使用安全名称
+                attr_name = safe_attr_name(attr_def["name"])  # Use safe name
                 attr_desc = attr_def.get("description", attr_name)
-                # Zep API 需要 Field 的 description，这是必需的
+                # Zep API requires Field description, this is mandatory
                 attrs[attr_name] = Field(description=attr_desc, default=None)
-                annotations[attr_name] = Optional[str]  # 边属性用str类型
+                annotations[attr_name] = Optional[str]  # Edge attributes use str type
             
             attrs["__annotations__"] = annotations
             
-            # 动态创建类
+            # Dynamically create class
             class_name = ''.join(word.capitalize() for word in name.split('_'))
             edge_class = type(class_name, (EdgeModel,), attrs)
             edge_class.__doc__ = description
             
-            # 构建source_targets
+            # Build source_targets
             source_targets = []
             for st in edge_def.get("source_targets", []):
                 source_targets.append(
@@ -277,7 +277,7 @@ class GraphBuilderService:
             if source_targets:
                 edge_definitions[name] = (edge_class, source_targets)
         
-        # 调用Zep API设置本体
+        # Call Zep API to set ontology
         if entity_types or edge_definitions:
             self.client.graph.set_ontology(
                 graph_ids=[graph_id],
@@ -308,27 +308,27 @@ class GraphBuilderService:
                     progress
                 )
             
-            # 构建episode数据
+            # Build episode data
             episodes = [
                 EpisodeData(data=chunk, type="text")
                 for chunk in batch_chunks
             ]
             
-            # 发送到Zep
+            # Send to Zep
             try:
                 batch_result = self.client.graph.add_batch(
                     graph_id=graph_id,
                     episodes=episodes
                 )
                 
-                # 收集返回的 episode uuid
+                # Collect returned episode uuids
                 if batch_result and isinstance(batch_result, list):
                     for ep in batch_result:
                         ep_uuid = getattr(ep, 'uuid_', None) or getattr(ep, 'uuid', None)
                         if ep_uuid:
                             episode_uuids.append(ep_uuid)
                 
-                # 避免请求过快
+                # Avoid too many requests
                 time.sleep(1)
                 
             except Exception as e:
@@ -347,7 +347,7 @@ class GraphBuilderService:
         """Wait for all episodes to be processed (by querying each episode's processed status)"""
         if not episode_uuids:
             if progress_callback:
-                progress_callback("无需等待（没有 episode）", 1.0)
+                progress_callback("No need to wait (no episodes)", 1.0)
             return
         
         start_time = time.time()
@@ -367,7 +367,7 @@ class GraphBuilderService:
                     )
                 break
             
-            # 检查每个 episode 的处理状态
+            # Check each episode processing status
             for ep_uuid in list(pending_episodes):
                 try:
                     episode = self.client.graph.episode.get(uuid_=ep_uuid)
@@ -378,7 +378,7 @@ class GraphBuilderService:
                         completed_count += 1
                         
                 except Exception as e:
-                    # 忽略单个查询错误，继续
+                    # Ignore single query error, continue
                     pass
             
             elapsed = int(time.time() - start_time)
@@ -389,7 +389,7 @@ class GraphBuilderService:
                 )
             
             if pending_episodes:
-                time.sleep(3)  # 每3秒检查一次
+                time.sleep(3)  # Check every 3 seconds
         
         if progress_callback:
             progress_callback(f"Processing complete: {completed_count}/{total_episodes}", 1.0)
