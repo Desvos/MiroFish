@@ -998,14 +998,14 @@ const InsightDisplay = {
               h('span', { class: 'stat-label' }, 'Relations')
             ]),
             props.resultLength && h('span', { class: 'stat-divider' }, '·'),
-            props.resultLength && h('span', { class: 'stat-size' }, formatSize(props.resultLength))
+            props.resultLength && h('span', { class: 'stat-size' }, formatSize(props.resultLength)),
           ])
         ]),
         props.result.query && h('div', { class: 'header-topic' }, props.result.query),
         props.result.simulationRequirement && h('div', { class: 'header-scenario' }, [
           h('span', { class: 'scenario-label' }, 'Prediction Scenario: '),
           h('span', { class: 'scenario-text' }, props.result.simulationRequirement)
-        ])
+        ]),
       ]),
       
       // Tab Navigation
