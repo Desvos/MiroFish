@@ -90,7 +90,7 @@ B. **Specific types (8, designed based on text content)**：
    - For example: if text involves business events, can have `Company`, `CEO`, `Employee`
 
 **Why need catch-all types**：
-- Various characters may appear in text, such as"中小学教师"、"路人甲"、"某位网友"
+- Various characters may appear in text, such as "primary school teacher", "passerby", "some netizen"
 - If no specific type matches, they should be classified into `Person`
 - Similarly, small organizations, temporary groups, etc. should be classified into `Organization`
 
@@ -113,45 +113,45 @@ B. **Specific types (8, designed based on text content)**：
 
 ## Entity type reference
 
-**Individual (specific)**：
-- Student: 学生
-- Professor: 教授/学者
-- Journalist: 记者
-- Celebrity: 明星/网红
-- Executive: 高管
-- Official: 政府官员
-- Lawyer: 律师
-- Doctor: 医生
+**Individual (specific)**:
+- Student: Student
+- Professor: Professor/Scholar
+- Journalist: Journalist
+- Celebrity: Celebrity/Influencer
+- Executive: Executive
+- Official: Government Official
+- Lawyer: Lawyer
+- Doctor: Doctor
 
-**个人类（兜底）**：
-- Person: 任何自然人（不属于上述具体类型时使用）
+**Individual (fallback)**:
+- Person: Any natural person (used when not belonging to above specific types)
 
-**组织类（具体）**：
-- University: 高校
-- Company: 公司企业
-- GovernmentAgency: 政府机构
-- MediaOutlet: 媒体机构
-- Hospital: 医院
-- School: 中小学
-- NGO: 非政府组织
+**Organization (specific)**:
+- University: University
+- Company: Company/Enterprise
+- GovernmentAgency: Government Agency
+- MediaOutlet: Media Organization
+- Hospital: Hospital
+- School: School
+- NGO: Non-Governmental Organization
 
-**组织类（兜底）**：
-- Organization: 任何组织机构（不属于上述具体类型时使用）
+**Organization (fallback)**:
+- Organization: Any organization (used when not belonging to above specific types)
 
-## 关系类型参考
+## Relation type reference
 
-- WORKS_FOR: 工作于
-- STUDIES_AT: 就读于
-- AFFILIATED_WITH: 隶属于
-- REPRESENTS: 代表
-- REGULATES: 监管
-- REPORTS_ON: 报道
-- COMMENTS_ON: 评论
-- RESPONDS_TO: 回应
-- SUPPORTS: 支持
-- OPPOSES: 反对
-- COLLABORATES_WITH: 合作
-- COMPETES_WITH: 竞争
+- WORKS_FOR: Works at
+- STUDIES_AT: Studies at
+- AFFILIATED_WITH: Affiliated with
+- REPRESENTS: Represents
+- REGULATES: Regulates
+- REPORTS_ON: Reports on
+- COMMENTS_ON: Comments on
+- RESPONDS_TO: Responds to
+- SUPPORTS: Supports
+- OPPOSES: Opposes
+- COLLABORATES_WITH: Collaborates with
+- COMPETES_WITH: Competes with
 """
 
 
@@ -193,14 +193,14 @@ class OntologyGenerator:
             {"role": "user", "content": user_message}
         ]
         
-        # 调用LLM
+        # Call LLM
         result = self.llm_client.chat_json(
             messages=messages,
             temperature=0.3,
             max_tokens=4096
         )
-        
-        # 验证和后处理
+
+        # Validate and post-process
         result = self._validate_and_process(result)
         
         return result
@@ -225,31 +225,31 @@ class OntologyGenerator:
             combined_text = combined_text[:self.MAX_TEXT_LENGTH_FOR_LLM]
             combined_text += f"\n\n...(Original {original_length} chars, truncated to first {self.MAX_TEXT_LENGTH_FOR_LLM} chars for ontology analysis)..."
         
-        message = f"""## 模拟需求
+        message = f"""## Simulation Requirements
 
 {simulation_requirement}
 
-## 文档内容
+## Document Content
 
 {combined_text}
 """
-        
+
         if additional_context:
             message += f"""
-## 额外说明
+## Additional Context
 
 {additional_context}
 """
-        
-        message += """
-请根据以上内容，设计适合社会舆论模拟entity types and relation types.
 
-**必须遵守的规则**：
-1. 必须正好输出10个实体类型
-2. 最后2个必须是兜底类型：Person（个人兜底）和 Organization（组织兜底）
-3. 前8个是根据文本内容设计的具体类型
-4. 所有实体类型必须是现实中可以发声的主体，不能是抽象概念
-5. Attribute names cannot use name、uuid、group_id etc.保留字，用 full_name、org_name 等替代
+        message += """
+Please design entity types and relation types suitable for social opinion simulation based on the above content.
+
+**Required Rules**:
+1. Must output exactly 10 entity types
+2. The last 2 must be fallback types: Person (individual fallback) and Organization (organization fallback)
+3. The first 8 are specific types designed based on the text content
+4. All entity types must be entities that can actually speak in reality, not abstract concepts
+5. Attribute names cannot use reserved words like name, uuid, group_id; use full_name, org_name, etc. instead
 """
         
         return message
@@ -391,13 +391,13 @@ class OntologyGenerator:
             code_lines.append('')
             code_lines.append('')
         
-        code_lines.append('# ============== 关系类型定义 ==============')
+        code_lines.append('# ============== Relation Type Definitions ==============')
         code_lines.append('')
-        
-        # 生成关系类型
+
+        # Generate relation types
         for edge in ontology.get("edge_types", []):
             name = edge["name"]
-            # 转换为PascalCase类名
+            # Convert to PascalCase class name
             class_name = ''.join(word.capitalize() for word in name.split('_'))
             desc = edge.get("description", f"A {name} relationship.")
             
@@ -419,8 +419,8 @@ class OntologyGenerator:
             code_lines.append('')
             code_lines.append('')
         
-        # 生成类型字典
-        code_lines.append('# ============== 类型配置 ==============')
+        # Generate type dictionary
+        code_lines.append('# ============== Type Configuration ==============')
         code_lines.append('')
         code_lines.append('ENTITY_TYPES = {')
         for entity in ontology.get("entity_types", []):
@@ -436,7 +436,7 @@ class OntologyGenerator:
         code_lines.append('}')
         code_lines.append('')
         
-        # 生成边的source_targets映射
+        # Generate edge source_targets mapping
         code_lines.append('EDGE_SOURCE_TARGETS = {')
         for edge in ontology.get("edge_types", []):
             name = edge["name"]
