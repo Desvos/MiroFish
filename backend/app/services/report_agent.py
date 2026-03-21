@@ -1,12 +1,12 @@
 """
-Report Agent服务
-使用LangChain + Zep实现ReACT模式的模拟报告生成
+Report Agent service
+Use LangChain + Zep to implement ReACT mode simulation report generation
 
-功能：
-1. 根据模拟需求和Zep图谱信息生成报告
-2. 先规划目录结构，然后分段生成
-3. 每段采用ReACT多轮思考与反思模式
-4. 支持与用户对话，在对话中自主调用检索工具
+Features:
+1. Generate report based on simulation requirements and Zep graph info
+2. First plan outline structure, then generate in sections
+3. Each section uses ReACT multi-round thinking and reflection mode
+4. Support dialogue with user, independently call retrieval tools during conversation
 """
 
 import os

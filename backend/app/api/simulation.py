@@ -159,7 +159,7 @@ def get_entities_by_type(graph_id: str, entity_type: str):
         }), 500
 
 
-# ============== 模拟管理接口 ==============
+# ============== Simulation Management Interface ==============
 
 @simulation_bp.route('/create', methods=['POST'])
 def create_simulation():
@@ -244,7 +244,7 @@ def _check_simulation_prepared(simulation_id: str) -> tuple:
     1. state.json exists and status is "ready"
     2. Required files exist: reddit_profiles.json, twitter_profiles.csv, simulation_config.json
     
-    注意：运行脚本(run_*.py)保留在 backend/scripts/ 目录，不再复制到模拟目录
+    Note: Run scripts (run_*.py) remain in backend/scripts/ directory, no longer copied to simulation directory
     
     Args:
         simulation_id: Simulation ID
@@ -420,31 +420,31 @@ def prepare_simulation():
                 "error": f"模拟不存在: {simulation_id}"
             }), 404
         
-        # 检查是否强制重新生成
+        # Check if force regenerate
         force_regenerate = data.get('force_regenerate', False)
-        logger.info(f"开始处理 /prepare 请求: simulation_id={simulation_id}, force_regenerate={force_regenerate}")
-        
-        # 检查是否已经准备完成（避免重复生成）
+        logger.info(f"Start processing /prepare request: simulation_id={simulation_id}, force_regenerate={force_regenerate}")
+
+        # Check if already prepared (avoid duplicate generation)
         if not force_regenerate:
-            logger.debug(f"检查模拟 {simulation_id} 是否已准备完成...")
+            logger.debug(f"Checking if simulation {simulation_id} is prepared...")
             is_prepared, prepare_info = _check_simulation_prepared(simulation_id)
-            logger.debug(f"检查结果: is_prepared={is_prepared}, prepare_info={prepare_info}")
+            logger.debug(f"Check result: is_prepared={is_prepared}, prepare_info={prepare_info}")
             if is_prepared:
-                logger.info(f"模拟 {simulation_id} 已准备完成，跳过重复生成")
+                logger.info(f"Simulation {simulation_id} already prepared, skip duplicate generation")
                 return jsonify({
                     "success": True,
                     "data": {
                         "simulation_id": simulation_id,
                         "status": "ready",
-                        "message": "已有完成的准备工作，无需重复生成",
+                        "message": "Already has completed preparation, no need to regenerate",
                         "already_prepared": True,
                         "prepare_info": prepare_info
                     }
                 })
             else:
-                logger.info(f"模拟 {simulation_id} 未准备完成，将启动准备任务")
-        
-        # 从项目获取必要信息
+                logger.info(f"Simulation {simulation_id} not prepared, will start preparation task")
+
+        # Get necessary info from project
         project = ProjectManager.get_project(state.project_id)
         if not project:
             return jsonify({
@@ -452,41 +452,41 @@ def prepare_simulation():
                 "error": f"项目不存在: {state.project_id}"
             }), 404
         
-        # 获取模拟需求
+        # Get simulation requirement
         simulation_requirement = project.simulation_requirement or ""
         if not simulation_requirement:
             return jsonify({
                 "success": False,
-                "error": "项目缺少模拟需求描述 (simulation_requirement)"
+                "error": "Project missing simulation requirement description (simulation_requirement)"
             }), 400
-        
-        # 获取文档文本
+
+        # Get document text
         document_text = ProjectManager.get_extracted_text(state.project_id) or ""
-        
+
         entity_types_list = data.get('entity_types')
         use_llm_for_profiles = data.get('use_llm_for_profiles', True)
         parallel_profile_count = data.get('parallel_profile_count', 5)
-        
-        # ========== 同步获取实体数量（在后台任务启动前） ==========
-        # 这样前端在调用prepare后立即就能获取到预期Agent总数
+
+        # ========== Sync get entity count (before background task starts) ==========
+        # This way frontend can immediately get expected Agent total after calling prepare
         try:
-            logger.info(f"同步获取实体数量: graph_id={state.graph_id}")
+            logger.info(f"Sync get entity count: graph_id={state.graph_id}")
             reader = ZepEntityReader()
-            # 快速读取实体（不需要边信息，只统计数量）
+            # Quick read entities (don't need edge info, just count)
             filtered_preview = reader.filter_defined_entities(
                 graph_id=state.graph_id,
                 defined_entity_types=entity_types_list,
                 enrich_with_edges=False  # 不获取边信息，加快速度
             )
-            # 保存实体数量到状态（供前端立即获取）
+            # Save entity count to state (for frontend to get immediately)
             state.entities_count = filtered_preview.filtered_count
             state.entity_types = list(filtered_preview.entity_types)
-            logger.info(f"预期实体数量: {filtered_preview.filtered_count}, 类型: {filtered_preview.entity_types}")
+            logger.info(f"Expected entity count: {filtered_preview.filtered_count}, types: {filtered_preview.entity_types}")
         except Exception as e:
-            logger.warning(f"同步获取实体数量失败（将在后台任务中重试）: {e}")
-            # 失败不影响后续流程，后台任务会重新获取
-        
-        # 创建异步任务
+            logger.warning(f"Sync get entity count failed (will retry in background task): {e}")
+            # Failure doesn't affect subsequent process, background task will get again
+
+        # Create async task
         task_manager = TaskManager()
         task_id = task_manager.create_task(
             task_type="simulation_prepare",
@@ -637,18 +637,18 @@ def prepare_simulation():
 @simulation_bp.route('/prepare/status', methods=['POST'])
 def get_prepare_status():
     """
-    查询准备任务进度
-    
-    支持两种查询方式：
-    1. 通过task_id查询正在进行的任务进度
-    2. 通过simulation_id检查是否已有完成的准备工作
-    
+    Query preparation task progress
+
+    Supports two query methods:
+    1. Query ongoing task progress via task_id
+    2. Check if preparation is already completed via simulation_id
+
     Request (JSON):
         {
-            "task_id": "task_xxxx",          // 可选，prepare返回的task_id
-            "simulation_id": "sim_xxxx"      // 可选，模拟ID（用于检查已完成的准备）
+            "task_id": "task_xxxx",          // Optional, task_id returned by prepare
+            "simulation_id": "sim_xxxx"      // Optional, simulation ID (for checking completed preparation)
         }
-    
+
     Returns:
         {
             "success": true,

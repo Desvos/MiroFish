@@ -79,7 +79,7 @@ class NodeInfo:
 
 @dataclass
 class EdgeInfo:
-    """边信息"""
+    """Edge information"""
     uuid: str
     name: str
     fact: str
@@ -87,7 +87,7 @@ class EdgeInfo:
     target_node_uuid: str
     source_node_name: Optional[str] = None
     target_node_name: Optional[str] = None
-    # 时间信息
+    # Temporal information
     created_at: Optional[str] = None
     valid_at: Optional[str] = None
     invalid_at: Optional[str] = None
@@ -125,12 +125,12 @@ class EdgeInfo:
     
     @property
     def is_expired(self) -> bool:
-        """是否已过期"""
+        """Check if expired"""
         return self.expired_at is not None
-    
+
     @property
     def is_invalid(self) -> bool:
-        """是否已失效"""
+        """Check if invalid"""
         return self.invalid_at is not None
 
 
